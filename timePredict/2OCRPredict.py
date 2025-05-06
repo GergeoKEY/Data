@@ -2,7 +2,7 @@ import pandas as pd
 import time
 from pydub import AudioSegment
 import easyocr
-from ModelTrainer1 import ModelTrainer
+from ModelTrainer2 import ModelTrainer
 import os
 import numpy as np
 import torch

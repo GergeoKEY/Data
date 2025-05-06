@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
+import os
 
 class ModelTrainer:
     def __init__(self, feature_columns, target_column, model_path):
@@ -21,6 +22,8 @@ class ModelTrainer:
         self.scaler = None
         self.best_mae = float('inf')
         self.best_r2 = 0
+        self.checkpoint_dir = os.path.join(os.path.dirname(model_path), 'checkpoints')
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def train_model(self, data, incremental=False):
         """
@@ -57,33 +60,40 @@ class ModelTrainer:
         # XGBoost参数 - 针对小数据集优化
         params = {
             "objective": "reg:squarederror",
-            "learning_rate": 0.05,  # 降低学习率
-            "max_depth": 4,         # 减小树的深度
-            "min_child_weight": 3,  # 增加以防止过拟合
-            "subsample": 0.8,       # 随机采样
-            "colsample_bytree": 0.8,# 特征采样
+            "learning_rate": 0.05,
+            "max_depth": 4,
+            "min_child_weight": 3,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
             "random_state": 42,
             "tree_method": "hist",
             "device": "cuda",
         }
 
-        # 训练参数 - 针对小数据集调整
-        batch_size = 10  # 减小批次大小
-        initial_batch_size = 20  # 减小初始批次大小
+        # 训练参数
+        batch_size = 10
+        initial_batch_size = 20
         num_batches = (len(X_train_scaled) - initial_batch_size) // batch_size
 
-        # 初始训练
-        X_init = X_train_scaled[:initial_batch_size]
-        y_init = y_train.iloc[:initial_batch_size]
-        dtrain_init = xgb.DMatrix(X_init, label=y_init, feature_names=self.feature_columns)
+        # 检查是否存在检查点
+        checkpoint_path = os.path.join(self.checkpoint_dir, 'latest_checkpoint.json')
+        if os.path.exists(checkpoint_path) and incremental:
+            print("Loading existing model checkpoint...")
+            self.best_model = xgb.Booster()
+            self.best_model.load_model(checkpoint_path)
+        else:
+            # 初始训练
+            X_init = X_train_scaled[:initial_batch_size]
+            y_init = y_train.iloc[:initial_batch_size]
+            dtrain_init = xgb.DMatrix(X_init, label=y_init, feature_names=self.feature_columns)
 
-        print(f"\n🆕 训练初始模型 ({initial_batch_size} samples)...")
-        self.best_model = xgb.train(
-            params, dtrain_init, 
-            num_boost_round=100,  # 增加训练轮数
-            evals=[(dval, "eval")], 
-            early_stopping_rounds=20  # 增加早停轮数
-        )
+            print(f"\n🆕 训练初始模型 ({initial_batch_size} samples)...")
+            self.best_model = xgb.train(
+                params, dtrain_init, 
+                num_boost_round=100,
+                evals=[(dval, "eval")], 
+                early_stopping_rounds=20
+            )
 
         # 评估初始模型
         y_pred_val = self.best_model.predict(dval)
@@ -99,15 +109,15 @@ class ModelTrainer:
             dtrain_batch = xgb.DMatrix(X_batch, label=y_batch, feature_names=self.feature_columns)
 
             # 调整学习率
-            learning_rate = 0.05 * (0.95 ** i)  # 更平缓的学习率衰减
+            learning_rate = 0.05 * (0.95 ** i)
             params["learning_rate"] = learning_rate
             
             print(f"\n🔄 增量训练 batch {i} ({current_size} samples, lr={learning_rate:.4f})...")
             self.best_model = xgb.train(
                 params, dtrain_batch, 
-                num_boost_round=100,  # 增加训练轮数
+                num_boost_round=50,  # 减少每轮的训练轮数
                 evals=[(dval, "eval")], 
-                early_stopping_rounds=20,  # 增加早停轮数
+                early_stopping_rounds=10,
                 xgb_model=self.best_model
             )
             
@@ -122,25 +132,8 @@ class ModelTrainer:
                 self.best_mae = current_mae_val
                 self.best_r2 = current_r2_val
                 self._save_model()
-            
-            # 每3个batch重新训练
-            if i % 3 == 0:  # 减少重新训练的间隔
-                print("\n🔄 重新训练整个模型以减少偏差...")
-                self.best_model = xgb.train(
-                    params, dtrain_batch, 
-                    num_boost_round=150,  # 增加重新训练的轮数
-                    evals=[(dval, "eval")], 
-                    early_stopping_rounds=20
-                )
-                y_pred_val = self.best_model.predict(dval)
-                y_pred_test = self.best_model.predict(dtest)
-                retrain_mae_val, retrain_r2_val = self._print_evaluation_metrics(y_val, y_pred_val, f"重新训练 (Batch {i}) 验证集")
-                retrain_mae_test, retrain_r2_test = self._print_evaluation_metrics(y_test, y_pred_test, f"重新训练 (Batch {i}) 测试集")
-                
-                if retrain_mae_val < self.best_mae:
-                    self.best_mae = retrain_mae_val
-                    self.best_r2 = retrain_r2_val
-                    self._save_model()
+                # 保存检查点
+                self.best_model.save_model(checkpoint_path)
 
         print("\n📊 训练完成！")
         print(f"最佳验证集 MAE: {self.best_mae:.4f}")

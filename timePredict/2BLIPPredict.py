@@ -29,8 +29,8 @@ class BLIPPredictionTool:
 
         # 数据和模型的路径
         self.execution_data_path = "data/800blip_data.csv"
-        self.process_model_path = "model/blip_process_model.pkl"
-        self.load_model_path = "model/blip_load_model.pkl"
+        self.process_model_path = "model/blip_process_model.json"
+        self.load_model_path = "model/blip_load_model.json"
 
         # 加载执行数据
         self.execution_data = self.load_execution_data()
