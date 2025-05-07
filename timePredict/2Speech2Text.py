@@ -4,17 +4,18 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from ModelTrainer2 import ModelTrainer
 import os
-
+# 设置要使用的 GPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
 class SpeechRecognitionTool:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         
         # 确保数据目录存在
         os.makedirs("data", exist_ok=True)
-        os.makedirs("model", exist_ok=True)
+        os.makedirs("xgboost_model", exist_ok=True)
         
         self.data_path = "data/500audio2Text.csv"
-        self.model_path = "model/audio2Text_model.pkl"
+        self.model_path = "xgboost_model/audio2Text_model.json"
         self.execution_data = self.load_execution_data()
         self.model_trainer = ModelTrainer(
             feature_columns=["duration"],

@@ -9,6 +9,8 @@ import torch
 from PIL import Image
 import cv2
 
+# 设置要使用的 GPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
 
 class OCRPredictionTool:
     def __init__(self, languages=['en', 'ch_sim'], measure_load_time=True):
@@ -16,15 +18,16 @@ class OCRPredictionTool:
         load_start_time = time.perf_counter() if measure_load_time else None
         
         print(f"加载 EasyOCR 模型（languages: {languages}）中...")
-        self.model = easyocr.Reader(languages)
+        # 设置模型使用指定的 GPU
+        self.model = easyocr.Reader(languages, gpu=True)
         
         # 计算加载时间
         self.model_load_time = time.perf_counter() - load_start_time if measure_load_time else 0
         print(f"模型加载完成。加载时间: {self.model_load_time:.2f} 秒")
         
         self.data_path = "data/1ocr_data.csv"
-        self.model_path = "model/1ocr_model.pkl"
-        self.load_model_path = "model/1ocr_load_model.pkl"
+        self.model_path = "xgboost_model/1ocr_model.json"
+        self.load_model_path = "xgboost_model/1ocr_load_model.json"
         self.execution_data = self.load_execution_data()
         self.languages = languages
         

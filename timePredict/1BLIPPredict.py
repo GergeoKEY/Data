@@ -238,32 +238,32 @@ class BLIPPredictionTool:
 def main():
     tool = BLIPPredictionTool(measure_load_time=True)
 
-    # 测试问题列表
-    questions = [
-        "What is in the image?",
-        "How many objects are there?",
-        "What color is the main object?",
-        "Is there a person in the image?",
-        "What is the background?",
-        "Are there any animals?",
-        "What is the main focus?",
-        "Is it day or night?",
-        "What is the setting?",
-        "Are there any vehicles?"
-    ]
+    # # 测试问题列表
+    # questions = [
+    #     "What is in the image?",
+    #     "How many objects are there?",
+    #     "What color is the main object?",
+    #     "Is there a person in the image?",
+    #     "What is the background?",
+    #     "Are there any animals?",
+    #     "What is the main focus?",
+    #     "Is it day or night?",
+    #     "What is the setting?",
+    #     "Are there any vehicles?"
+    # ]
 
-    # 处理图像数据集
-    print("Processing images...")
-    for i in range(50):  # 限制为50张图像
-        image_path = f"/home/xingzhuang/workplace/yyh/GAIA_TOOL/picture/gaia_{i}.jpg"
-        if os.path.exists(image_path):
-            # 选择一个问题
-            question = questions[i % len(questions)]
-            # 每5张图像测量一次加载时间
-            measure_load = (i % 5 == 0)  # 每5张图像测量一次加载时间
-            result, process_time, total_time = tool.image_to_answer(image_path, question, measure_load=measure_load)
-            print(f"Result: {result}")
-            print(f"Processing time: {process_time:.2f}s, Total time: {total_time:.2f}s")
+    # # 处理图像数据集
+    # print("Processing images...")
+    # for i in range(50): 
+    #     image_path = f"picture/gaia_{i}.jpg"
+    #     if os.path.exists(image_path):
+    #         # 选择一个问题
+    #         question = questions[i % len(questions)]
+    #         # 每5张图像测量一次加载时间
+    #         measure_load = (i % 5 == 0)  # 每5张图像测量一次加载时间
+    #         result, process_time, total_time = tool.image_to_answer(image_path, question, measure_load=measure_load)
+    #         print(f"Result: {result}")
+    #         print(f"Processing time: {process_time:.2f}s, Total time: {total_time:.2f}s")
 
     # 训练模型
     print("Training models...")
@@ -277,7 +277,7 @@ def main():
     print("Predicting execution times...")
     try:
         # 使用示例图像
-        example_image_path = "/home/xingzhuang/workplace/yyh/GAIA_TOOL/picture/gaia_0.jpg"
+        example_image_path = "picture/gaia_0.jpg"
         if not os.path.exists(example_image_path):
             print("Example image not found, using default parameters")
             # 使用默认参数

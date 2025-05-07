@@ -5,7 +5,11 @@ import diffusers
 import itertools
 from ModelTrainer2 import ModelTrainer
 import warnings
+import os
 warnings.filterwarnings("ignore")
+
+# 设置要使用的 GPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
 class ImageGenerationTool:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -14,7 +18,7 @@ class ImageGenerationTool:
         self.pipe.to(self.device)
 
         self.execution_data_path = "timePredict/data/659text2image_data.csv"
-        self.model_path = "timePredict/model/img_gene_model.pkl"
+        self.model_path = "timePredict/xgboost_model/img_gene_model.json"
 
         #load execution data
         self.execution_data = self.load_execution_data()
@@ -63,28 +67,28 @@ class ImageGenerationTool:
 def main():
     tool = ImageGenerationTool()
 
-    prompts = [
-        "A fantasy castle", "A futuristic city", "A sunset over the ocean",
-        "A cyberpunk street", "A medieval village", "A spaceship interior",
-        "A snowy mountain", "A deep-sea world", "A magical forest",
-        "An alien planet", "A steampunk factory", "A robot uprising",
-        "A burning phoenix", "A galaxy far away", "A secret underground base"
-    ]
+    # prompts = [
+    #     "A fantasy castle", "A futuristic city", "A sunset over the ocean",
+    #     "A cyberpunk street", "A medieval village", "A spaceship interior",
+    #     "A snowy mountain", "A deep-sea world", "A magical forest",
+    #     "An alien planet", "A steampunk factory", "A robot uprising",
+    #     "A burning phoenix", "A galaxy far away", "A secret underground base"
+    # ]
 
-    settings = [
-        {"height": h, "width": w, "num_inference_steps": s}
-        for h, w, s in itertools.product(
-            [320, 480, 512, 576, 640, 768, 800, 1024, 1152, 1280],
-            [320, 480, 512, 576, 640, 768, 800, 1024, 1152, 1280],
-            [15, 25, 35, 45, 55, 65, 75, 85, 95, 105]
-        )
-    ]
+    # settings = [
+    #     {"height": h, "width": w, "num_inference_steps": s}
+    #     for h, w, s in itertools.product(
+    #         [320, 480, 512, 576, 640, 768, 800, 1024, 1152, 1280],
+    #         [320, 480, 512, 576, 640, 768, 800, 1024, 1152, 1280],
+    #         [15, 25, 35, 45, 55, 65, 75, 85, 95, 105]
+    #     )
+    # ]
 
-    test_cases = list(itertools.islice(itertools.product(prompts, settings), 800))
+    # test_cases = list(itertools.islice(itertools.product(prompts, settings), 800))
 
-    for i, (prompt, setting) in enumerate(test_cases):
-        path = f"/home/xingzhuang/workplace/yyh/data/2/generated_image_{i}.png"
-        tool.generate_image(prompt=prompt, path=path, **setting)
+    # for i, (prompt, setting) in enumerate(test_cases):
+    #     path = f"/home/xingzhuang/workplace/yyh/data/2/generated_image_{i}.png"
+    #     tool.generate_image(prompt=prompt, path=path, **setting)
 
     tool.train_model()
 
