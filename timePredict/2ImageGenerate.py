@@ -8,8 +8,7 @@ import warnings
 import os
 warnings.filterwarnings("ignore")
 
-# 设置要使用的 GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
+
 class ImageGenerationTool:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

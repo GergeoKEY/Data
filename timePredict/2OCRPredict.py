@@ -9,8 +9,7 @@ import torch
 from PIL import Image
 import cv2
 
-# 设置要使用的 GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
+
 
 class OCRPredictionTool:
     def __init__(self, languages=['en', 'ch_sim'], measure_load_time=True):
