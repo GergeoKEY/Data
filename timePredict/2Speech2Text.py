@@ -4,8 +4,7 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from ModelTrainer2 import ModelTrainer
 import os
-# 设置要使用的 GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'  # 指定使用 GPU 2 和 3
+
 class SpeechRecognitionTool:
     def __init__(self):
         self.recognizer = sr.Recognizer()

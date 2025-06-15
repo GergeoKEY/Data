@@ -7,7 +7,6 @@ import os
 import numpy as np
 import librosa
 import torch
-import glob
 
 
 class SpeechRecognitionTool:

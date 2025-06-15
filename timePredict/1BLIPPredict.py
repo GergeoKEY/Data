@@ -12,6 +12,9 @@ warnings.filterwarnings("ignore")
 
 class BLIPPredictionTool:
     def __init__(self, measure_load_time=True):
+        # 指定使用 GPU 1
+        if torch.cuda.is_available():
+            torch.cuda.set_device(1)  # 使用 GPU 1
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using device: {self.device}")
         
@@ -29,8 +32,7 @@ class BLIPPredictionTool:
 
         # 数据和模型的路径
         self.execution_data_path = "data/800blip_data.csv"
-        self.process_model_path = "model/blip_process_model.pkl"
-        self.load_model_path = "model/blip_load_model.pkl"
+        self.model_path = "model/blip_model.pkl"
 
         # 加载执行数据
         self.execution_data = self.load_execution_data()
@@ -43,22 +45,14 @@ class BLIPPredictionTool:
             "question_length"    # 问题长度
         ]
         
-        # 处理时间预测模型
-        self.process_model_trainer = ModelTrainer(
+        # 执行时间预测模型
+        self.model_trainer = ModelTrainer(
             feature_columns=self.features,
-            target_column="process_time",
-            model_path=self.process_model_path
+            target_column="execution_time",
+            model_path=self.model_path
         )
         
-        # 加载时间预测模型
-        self.load_model_trainer = ModelTrainer(
-            feature_columns=self.features,
-            target_column="load_time",
-            model_path=self.load_model_path
-        )
-        
-        self.process_model_trained = False
-        self.load_model_trained = False
+        self.model_trained = False
 
     def calculate_image_entropy(self, image):
         """计算图像熵作为复杂度指标"""
@@ -129,22 +123,19 @@ class BLIPPredictionTool:
             answer = self.processor.decode(out[0], skip_special_tokens=True)
             print(f"Question: {question}")
             print(f"Answer: {answer}")
-            print(f"Process time: {process_time:.2f} seconds")
             print(f"Total execution time: {execution_time:.2f} seconds")
 
             # 记录执行数据
             self.execution_data.append({
                 **features,
-                "load_time": load_time,
-                "process_time": process_time,
                 "execution_time": execution_time
             })
             self.save_execution_data()
             
-            return answer, process_time, execution_time
+            return answer, execution_time
         except Exception as e:
             print(f"[Error] {image_path}: {str(e)}")
-            return None, 0, 0
+            return None, 0
 
     def save_execution_data(self):
         """将执行数据保存到CSV文件"""
@@ -158,34 +149,23 @@ class BLIPPredictionTool:
         return []
         
     def train_model(self):
-        """训练处理和加载时间预测模型"""
+        """训练执行时间预测模型"""
         df = pd.DataFrame(self.execution_data)
         if len(df) < 5:
             print("Insufficient data for model training (need at least 5 samples)")
             return False
             
-        # 训练处理时间预测模型
-        print("Training processing time prediction model...")
-        process_success = self.process_model_trainer.train_model(df)
-        self.process_model_trained = process_success
-        print(f"Processing time model training {'successful' if process_success else 'failed'}")
-        
-        # 检查是否有足够的加载时间数据
-        if 'load_time' in df.columns and df['load_time'].sum() > 0:
-            # 训练加载时间预测模型
-            print("Training load time prediction model...")
-            load_success = self.load_model_trainer.train_model(df)
-            self.load_model_trained = load_success
-            print(f"Load time model training {'successful' if load_success else 'failed'}")
-        else:
-            print("Not enough load time data, skipping load time model training")
-            
-        return process_success
+        # 训练执行时间预测模型
+        print("Training execution time prediction model...")
+        success = self.model_trainer.train_model(df)
+        self.model_trained = success
+        print(f"Model training {'successful' if success else 'failed'}")
+        return success
 
-    def predict_process_time(self, image_height, image_width, image_entropy, question_length):
-        """预测处理时间（不包括模型加载）"""
-        if not self.process_model_trained:
-            print("Processing time model not trained. Train model first.")
+    def predict_execution_time(self, image_height, image_width, image_entropy, question_length):
+        """预测总执行时间"""
+        if not self.model_trained:
+            print("Model not trained. Train model first.")
             return None
             
         # 创建特征数组
@@ -196,44 +176,8 @@ class BLIPPredictionTool:
             question_length
         ]])
             
-        # 预测处理时间
-        return round(self.process_model_trainer.predict(features), 2)
-    
-    def predict_load_time(self, image_height, image_width, image_entropy, question_length):
-        """预测模型加载时间"""
-        if not self.load_model_trained:
-            print("Load time model not trained. Train model first.")
-            return None
-            
-        # 创建特征数组
-        features = np.array([[
-            image_height, 
-            image_width, 
-            image_entropy,
-            question_length
-        ]])
-            
-        # 预测加载时间
-        return round(self.load_model_trainer.predict(features), 2)
-        
-    def predict_total_time(self, image_height, image_width, image_entropy, question_length):
-        """预测总时间（模型加载+处理）"""
-        process_time = self.predict_process_time(
-            image_height, image_width, image_entropy, question_length
-        )
-        
-        if process_time is None:
-            return None
-            
-        # 如果加载时间模型已训练，添加预测的加载时间
-        if self.load_model_trained:
-            load_time = self.predict_load_time(
-                image_height, image_width, image_entropy, question_length
-            )
-            return round(process_time + load_time, 2)
-        # 否则使用实际测量的加载时间
-        else:
-            return round(process_time + self.model_load_time, 2)
+        # 预测执行时间
+        return round(self.model_trainer.predict(features), 2)
 
 def main():
     tool = BLIPPredictionTool(measure_load_time=True)
@@ -261,12 +205,12 @@ def main():
     #         question = questions[i % len(questions)]
     #         # 每5张图像测量一次加载时间
     #         measure_load = (i % 5 == 0)  # 每5张图像测量一次加载时间
-    #         result, process_time, total_time = tool.image_to_answer(image_path, question, measure_load=measure_load)
+    #         result, execution_time = tool.image_to_answer(image_path, question, measure_load=measure_load)
     #         print(f"Result: {result}")
-    #         print(f"Processing time: {process_time:.2f}s, Total time: {total_time:.2f}s")
+    #         print(f"Total execution time: {execution_time:.2f}s")
 
     # 训练模型
-    print("Training models...")
+    print("Training model...")
     if tool.train_model():
         print("Model training successful")
     else:
@@ -277,7 +221,7 @@ def main():
     print("Predicting execution times...")
     try:
         # 使用示例图像
-        example_image_path = "picture/gaia_0.jpg"
+        example_image_path = "/home/xingzhuang/workplace/yyh/GAIA_TOOL/picture/gaia_0.jpg"
         if not os.path.exists(example_image_path):
             print("Example image not found, using default parameters")
             # 使用默认参数
@@ -294,28 +238,19 @@ def main():
             image_entropy = tool.calculate_image_entropy(image_np)
             question_length = len("What is in the image?")
             
-        # 预测处理时间（不包含加载）
-        predicted_process_time = tool.predict_process_time(
+        # 预测总执行时间
+        predicted_time = tool.predict_execution_time(
             image_height=image_height,
             image_width=image_width,
             image_entropy=image_entropy,
             question_length=question_length
         )
         
-        # 预测总时间（包含加载）
-        predicted_total_time = tool.predict_total_time(
-            image_height=image_height,
-            image_width=image_width,
-            image_entropy=image_entropy,
-            question_length=question_length
-        )
-        
-        if predicted_process_time is not None:
-            print(f"Predicted Process Time (without loading): {predicted_process_time} seconds")
-        if predicted_total_time is not None:
-            print(f"Predicted Total Time (with loading): {predicted_total_time} seconds")
+        if predicted_time is not None:
+            print(f"Predicted Total Execution Time: {predicted_time} seconds")
     except Exception as e:
         print(f"Error in prediction: {str(e)}")
 
 if __name__ == "__main__":
+    main() 
     main() 

@@ -43,14 +43,14 @@ class BLIPPredictionTool:
             "question_length"    # 问题长度
         ]
         
-        # 处理时间预测模型
+        # 处理时间 的 预测模型
         self.process_model_trainer = ModelTrainer(
             feature_columns=self.features,
             target_column="process_time",
             model_path=self.process_model_path
         )
         
-        # 加载时间预测模型
+        # 加载时间 的 预测模型
         self.load_model_trainer = ModelTrainer(
             feature_columns=self.features,
             target_column="load_time",

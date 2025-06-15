@@ -32,7 +32,7 @@ class ModelTrainer:
                 model_data = joblib.load(model_path)
                 self.best_model = model_data['model']
                 self.scaler = model_data['scaler']
-                print(f"已加载现有模型: {model_path}")
+                print(f"已加载现有模型,best_model: {model_path}")
             except Exception as e:
                 print(f"加载模型失败: {str(e)}")
 
@@ -43,6 +43,7 @@ class ModelTrainer:
         :param incremental: bool, 是否增量训练
         :return: 是否训练成功
         """
+        print(f"是否有加载好的模型: {self.best_model is not None}")
         if len(data) < 5:
             print("数据量不足，无法训练模型")
             return False
@@ -54,8 +55,15 @@ class ModelTrainer:
         # 如果是增量训练且已有模型，直接使用新数据
         if incremental and self.best_model is not None:
             print("使用新数据进行增量训练...")
-            X_new = X
-            y_new = y
+            # 如果新数据足够多，仍然分割一部分作为验证集
+            if len(X) > 10:  # 确保有足够数据分割
+                X_new, X_val, y_new, y_val = train_test_split(
+                    X, y, test_size=0.2, random_state=42
+                )
+                self.val_data = (X_val, y_val)
+            else:
+                X_new = X
+                y_new = y
         else:
             # 首次训练，划分训练集和验证集
             X_train, X_val, y_train, y_val = train_test_split(
@@ -102,13 +110,23 @@ class ModelTrainer:
         # 训练模型
         if incremental and self.best_model is not None:
             print("增量训练现有模型...")
-            self.best_model = xgb.train(
-                params, dtrain,
-                num_boost_round=50,
-                evals=eval_list,
-                early_stopping_rounds=10,
-                xgb_model=self.best_model
-            )
+            # 检查是否有验证集
+            if not eval_list:
+                # 没有验证集，不使用早停
+                self.best_model = xgb.train(
+                    params, dtrain,
+                    num_boost_round=50,
+                    xgb_model=self.best_model  # 移除 early_stopping_rounds
+                )
+            else:
+                # 有验证集，使用早停
+                self.best_model = xgb.train(
+                    params, dtrain,
+                    num_boost_round=50,
+                    evals=eval_list,
+                    early_stopping_rounds=10,
+                    xgb_model=self.best_model
+                )
         else:
             print("开始新模型训练...")
             self.best_model = xgb.train(

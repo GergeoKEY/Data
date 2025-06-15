@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from PIL import Image
 import cv2
+from sklearn.model_selection import train_test_split
 
 
 
@@ -280,7 +281,7 @@ class OCRPredictionTool:
             return False
             
         # 训练执行时间预测模型
-        success = self.model_trainer.train_model(df)
+        success = self.model_trainer.train_model(df,incremental=True)
         self.model_trained = success
         
         # 检查是否有足够的加载时间数据
