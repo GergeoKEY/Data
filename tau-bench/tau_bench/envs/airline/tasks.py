@@ -283,7 +283,9 @@ tasks = [
     {
         "annotator": 0,
         "user_id": "aarav_garcia_1177",
-        "instruction": "Your user id is aarav_garcia_1177. For your upcoming trip from ATL to PHL, you want to change for the cheapest economy flight and for the day after the original reservation. You are happy with original payment for refund.",
+        "instruction": "Your user id is aarav_garcia_1177. For your upcoming trip from ATL to PHL, 
+        you want to change for the cheapest economy flight and for the day after the original reservation. 
+        You are happy with original payment for refund.",
         "actions": [
             {
                 "name": "update_reservation_flights",
@@ -321,7 +323,14 @@ tasks = [
     {
         "annotator": 0,
         "user_id": "mohamed_silva_9265",
-        "instruction": "Your user id is mohamed_silva_9265. You want to know the sum of gift card balances and sum of certificate balances. If the agent gives you individual balances, you want the sums. Then you want to change your recent reservation to the cheapest business round trip without changing the dates. You don't care about direct flight or stop over. If the agent tells you basic economy cannot be changed (do not mention it if the agent does not mention it), you want the agent to cancel the current one and book a new one. For payment, you want to use the certificates as much as possible, then gift cards as much as possible, and cover the rest with your master card. But you want to know how much your master card will be charged. You do not need baggage or insurance. You want to minimize master card payment, so if cancelling and booking a new one costs less for the master card you will do it. You are calm.",
+        "instruction": "Your user id is mohamed_silva_9265. 
+        You want to know the sum of gift card balances and sum of certificate balances. If the agent gives you individual balances, you want the sums. 
+        Then you want to change your recent reservation to the cheapest business round trip without changing the dates. You don't care about direct flight or stop over. 
+        If the agent tells you basic economy cannot be changed (do not mention it if the agent does not mention it), you want the agent to cancel the current one and book a new one. 
+        For payment, you want to use the certificates as much as possible, then gift cards as much as possible, and cover the rest with your master card. 
+        But you want to know how much your master card will be charged. You do not need baggage or insurance. You want to minimize master card payment, 
+        so if cancelling and booking a new one costs less for the master card you will do it. You are calm.",
+        
         "actions": [
             {"name": "cancel_reservation", "arguments": {"reservation_id": "K1NW8N"}},
             {
